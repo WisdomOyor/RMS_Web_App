@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - RMS</title>
+    <link rel="icon" href="images/RMSLogo.png" type="image/png" />
+    <style>
+        :root {
+            --primary-color: #01310B;
+            --secondary-color: #08770F;
+            --light-bg: white;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(to bottom, var(--secondary-color), var(--primary-color));
+        }
+        .login-container {
+            background: var(--light-bg);
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            width: 300px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+        h2 {
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+        .input-group {
+            text-align: left;
+            margin-bottom: 10px;
+        }
+        .input-group label {
+            font-size: 14px;
+            display: block;
+            margin-bottom: 4px;
+            color: var(--primary-color);
+        }
+        .input-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .login-btn {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .login-btn:hover {
+            background: #035415;
+        }
+        .error {
+            color: red;
+            font-size: 14px;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+    <script>
+        function login() {
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+            const errorMsg = document.getElementById("error-msg");
+
+            if (username === "wgoyor" && password === "wgoyor") {
+                window.location.href = "index.html"; // Redirect to dashboard
+            } else {
+                errorMsg.style.display = "block"; // Show error message
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">RMS</div>
+        <h2>LOGIN</h2>
+        <div class="input-group">
+            <label for="username">Username</label>
+            <input type="text" id="username" placeholder="Enter username">
+        </div>
+        <div class="input-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" placeholder="Enter password">
+        </div>
+        <button class="login-btn" onclick="login()">Login</button>
+        <p class="error" id="error-msg">Invalid username or password!</p>
+    </div>
+</body>
+</html>

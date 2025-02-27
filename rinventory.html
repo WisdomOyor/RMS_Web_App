@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Resource Inventory - RMS</title>
+    <link rel="icon" href="images/RMSLogo.png" type="image/png" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+    <script src="js/firestore.js"></script>
+    <style>
+      :root {
+        --primary-color: #01310b;
+        --secondary-color: #08770f;
+        --hover-color: #035415;
+        --border-color: #cdcdcd;
+        --light-bg: #f0f0f0;
+        --highlight-color: #012308;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        display: flex;
+        min-height: 100vh;
+        font-family: Arial, sans-serif;
+        background: white;
+      }
+      .sidebar {
+        width: 250px;
+        background: linear-gradient(to bottom, var(--secondary-color), var(--primary-color));
+        color: white;
+        display: flex;
+        flex-direction: column;
+        padding: 20px;
+        height: 100vh;
+        position: fixed;
+      }
+      .logo {
+        font-size: 28px;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .nav-links {
+        list-style: none;
+        flex-grow: 1;
+      }
+      .nav-links li {
+        margin: 15px 0;
+      }
+      .nav-links i {
+        margin-right: 3px;
+      }
+      .nav-links a,
+      .logout a {
+        color: white;
+        text-decoration: none;
+        font-size: 15px;
+        display: block;
+        padding: 10px;
+        border-radius: 5px;
+        transition: background 0.3s ease, box-shadow 0.3s ease;
+      }
+      .nav-links a:hover,
+      .logout a:hover {
+        background: var(--hover-color);
+        opacity: 1;
+        box-shadow: 0 2px 4px rgba(1, 49, 11, 0.3);
+      }
+      .nav-links a.active {
+        background: var(--primary-color);
+      }
+      .logout {
+        margin-top: auto;
+        text-align: center;
+      }
+      .logout a {
+        width: 100%;
+        text-align: center;
+        border: 2px solid var(--highlight-color);
+      }
+      .dashboard {
+        flex-grow: 1;
+        padding: 20px;
+        margin-left: 250px;
+        min-height: 100vh;
+      }
+      .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+      .date {
+        padding: 5px 10px;
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+      }
+      .heading {
+        display: flex;
+        align-items: flex-end;
+        margin-bottom: 10px;
+      }
+      .heading a {
+        padding: 10px;
+        color: #000000;
+        border-bottom: 2px solid var(--border-color);
+        text-decoration: none;
+        font-weight: bold;
+        cursor: pointer;
+      }
+      .heading a.active {
+        color: var(--primary-color);
+        border-bottom: 2px solid var(--primary-color);
+      }
+      .tab-border {
+        flex-grow: 1;
+        border-bottom: 2px solid var(--border-color);
+        height: 2px;
+      }
+      .tab-content {
+        display: none;
+      }
+      .tab-content.active {
+        display: block;
+      }
+      .section {
+        margin-bottom: 20px;
+      }
+      h3 {
+        margin-bottom: 10px;
+      }
+      p {
+        font-size: 14px;
+      }
+      .delete-btn {
+        padding: 3px 5px;
+        transition: all 0.3s ease;
+      }
+      .delete-btn:hover {
+        color: #ff0000;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        margin-bottom: 20px;
+      }
+      th,
+      td {
+        padding: 10px;
+        border: 1px solid var(--border-color);
+      }
+      th {
+        background: var(--light-bg);
+        font-weight: bold;
+      }
+      .add-btn-container {
+        width: 100%;
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 10px;
+      }
+      .add-btn {
+        background: var(--primary-color);
+        color: yellow;
+        border-radius: 10%;
+        padding: 10px 14px;
+        cursor: pointer;
+        transition: box-shadow 0.3s ease;
+      }
+      .add-btn:hover {
+        box-shadow: 0 4px 8px rgba(1, 49, 11, 0.3);
+      }
+      .bold-text {
+        font-weight: bold;
+        font-size: 16px;
+      }
+      /* Staff Form Container */
+      .form-container {
+        background: var(--light-bg);
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        width: 320px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        margin-top: 10px;
+        display: none; /* Initially hidden */
+      }
+
+      /* Form Title */
+      .form-container p {
+        font-size: 16px;
+        font-weight: bold;
+        color: var(--primary-color);
+        margin-bottom: 10px;
+      }
+
+      /* Input Group */
+      .input-group {
+        text-align: left;
+        margin-bottom: 10px;
+      }
+
+      .input-group label {
+        font-size: 14px;
+        display: block;
+        margin-bottom: 4px;
+        color: var(--primary-color);
+      }
+
+      .input-group input {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+      }
+
+      /* Form Buttons */
+      .form-buttons {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 10px;
+      }
+
+      .form-buttons button {
+        flex: 1;
+        padding: 10px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      .add-record-btn {
+        background: var(--primary-color);
+        color: white;
+        margin-right: 5px;
+      }
+
+      .add-record-btn:hover {
+        background: #035415;
+      }
+
+      .cancel-btn {
+        background: #ccc;
+        color: black;
+        margin-left: 5px;
+      }
+
+      .cancel-btn:hover {
+        background: #999;
+      }
+
+      /* Notification Popup */
+      .notification-popup {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #fff;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        padding: 20px;
+        width: 300px;
+        z-index: 1000;
+        display: none; /* Initially hidden */
+      }
+
+      .notification-popup p {
+        margin: 0 0 15px 0;
+        font-size: 14px;
+        color: #000000;
+      }
+      .notification-popup i{
+        margin-bottom: 5px;
+      }
+
+      .notification-popup button {
+        background: #ff0000;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 8px 16px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background 0.3s ease;
+      }
+
+      .notification-popup button:hover {
+        background: #ff0000;
+      }
+    </style>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const today = new Date();
+        const options = { weekday: "short", day: "2-digit", month: "short" };
+        document.querySelector(".date").textContent = today.toLocaleDateString("en-US", options);
+
+        const tabs = document.querySelectorAll(".tab-link");
+        const contents = document.querySelectorAll(".tab-content");
+
+        tabs.forEach((tab) => {
+          tab.addEventListener("click", function () {
+            tabs.forEach((t) => t.classList.remove("active"));
+            contents.forEach((c) => c.classList.remove("active"));
+
+            this.classList.add("active");
+            document.getElementById(this.dataset.tab).classList.add("active");
+          });
+        });
+
+        document.querySelector(".tab-link.active").click();
+      });
+    </script>
+  </head>
+  <body>
+    <div class="sidebar">
+      <div class="logo">RMS</div>
+      <ul class="nav-links">
+        <li>
+          <a href="index.html"><i class="fa-solid fa-table-columns"></i> Dashboard</a>
+        </li>
+        <li>
+          <a href="#" class="active"><i class="fa-solid fa-square-plus"></i> Resource Inventory</a>
+        </li>
+        <li>
+          <a href="rtracking.html"><i class="fa-solid fa-gauge-high"></i> Resource Tracking</a>
+        </li>
+        <li>
+          <a href="settings.html"><i class="fa-solid fa-gear"></i> System Settings</a>
+        </li>
+      </ul>
+      <div class="logout">
+        <a href="login.html">Log Out</a>
+      </div>
+    </div>
+    <div class="dashboard">
+      <div class="top-bar">
+        <h1>Resource Inventory</h1>
+        <div class="date"></div>
+      </div>
+      <div class="heading">
+        <a href="#" class="tab-link active" data-tab="staff-management">Staff Management</a>
+        <a href="#" class="tab-link" data-tab="facility-equipment">Facility & Equipment Management</a>
+        <div class="tab-border"></div>
+      </div>
+
+      <!-- Staff Management Tab -->
+      <div id="staff-management" class="tab-content active">
+        <p>The list of active staff.</p>
+
+        <!-- Staff Table -->
+        <table>
+          <thead>
+            <tr>
+              <th>Staff ID</th>
+              <th>Name</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="staff-table-body"></tbody>
+        </table>
+
+        <!-- Add Button -->
+        <div class="add-btn-container">
+          <button id="show-form-btn" class="add-btn">+</button>
+        </div>
+
+        <!-- Hidden Staff Form -->
+        <div id="staff-form-container" class="form-container">
+          <p>Fill the form appropriately.</p>
+          <form id="staff-form">
+            <div class="input-group">
+              <label for="staffID">Staff ID</label>
+              <input type="text" id="staffID" placeholder="Enter Staff ID" required />
+            </div>
+            <div class="input-group">
+              <label for="staffName">Name</label>
+              <input type="text" id="staffName" placeholder="Enter Name" required />
+            </div>
+            <div class="form-buttons">
+              <button type="submit" class="add-record-btn">Add Record</button>
+              <button type="button" id="cancel-form-btn" class="cancel-btn">Cancel</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Facility & Equipment Management Tab -->
+      <div id="facility-equipment" class="tab-content">
+        <section class="section">
+          <p>The list of available resources.</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Resource</th>
+                <th>Available</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="available-resources-table-body"></tbody>
+          </table>
+          <div class="add-btn-container">
+            <button id="show-resource-form-btn" class="add-btn">+</button>
+          </div>
+          <!-- Available Resources Form -->
+          <div id="resource-form-container" class="form-container">
+            <p>Fill the form appropriately.</p>
+            <form id="resource-form">
+              <div class="input-group">
+                <label for="resourceName">Resource</label>
+                <input type="text" id="resourceName" placeholder="Enter Resource Name" required />
+              </div>
+              <div class="input-group">
+                <label for="resourceAvailable">Available</label>
+                <input type="number" id="resourceAvailable" placeholder="Enter Available Quantity" required />
+              </div>
+              <div class="form-buttons">
+                <button type="submit" class="add-record-btn">Add Record</button>
+                <button type="button" id="cancel-resource-form-btn" class="cancel-btn">Cancel</button>
+              </div>
+            </form>
+          </div>
+        </section>
+        <section class="section">
+          <h3>Ward Beds Usage</h3>
+          <p>Usage of Beds in Wards</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Patient ID</th>
+                <th>Staff Assigned</th>
+              </tr>
+            </thead>
+            <tbody id="ward-beds-usage-table-body"></tbody>
+          </table>
+          <p class="bold-text">Number of Available Beds: <span id="available-beds">0</span></p>
+        </section>
+        <section class="section">
+          <h3>Oxygen Cylinder Management</h3>
+          <p>Stocking of Oxygen Cylinders</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Amount Added</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="oxygen-stocking-table-body"></tbody>
+          </table>
+          <div class="add-btn-container">
+            <button id="show-oxygen-stocking-form-btn" class="add-btn">+</button>
+          </div>
+          <!-- Oxygen Cylinder Stocking Form -->
+          <div id="oxygen-stocking-form-container" class="form-container">
+            <p>Fill the form appropriately.</p>
+            <form id="oxygen-stocking-form">
+              <div class="input-group">
+                <label for="amountAdded">Amount Added</label>
+                <input type="number" id="amountAdded" placeholder="Enter Amount Added" required />
+              </div>
+              <div class="form-buttons">
+                <button type="submit" class="add-record-btn">Add Record</button>
+                <button type="button" id="cancel-oxygen-stocking-form-btn" class="cancel-btn">Cancel</button>
+              </div>
+            </form>
+          </div>
+          <p>Usage of Oxygen Cylinders</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Patient ID</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="oxygen-usage-table-body"></tbody>
+          </table>
+          <div class="add-btn-container">
+            <button id="show-oxygen-usage-form-btn" class="add-btn">+</button>
+          </div>
+          <!-- Oxygen Cylinder Usage Form -->
+          <div id="oxygen-usage-form-container" class="form-container">
+            <p>Fill the form appropriately.</p>
+            <form id="oxygen-usage-form">
+              <div class="input-group">
+                <label for="patientID">Patient ID</label>
+                <input type="text" id="patientID" placeholder="Enter Patient ID" required />
+              </div>
+              <div class="form-buttons">
+                <button type="submit" class="add-record-btn">Add Record</button>
+                <button type="button" id="cancel-oxygen-usage-form-btn" class="cancel-btn">Cancel</button>
+              </div>
+            </form>
+          </div>
+          <p class="bold-text">Number of Available Cylinders: <span id="available-cylinders">0</span></p>
+        </section>
+      </div>
+    </div>
+    <script type="module">
+      import { loadStaff, addStaff } from "./js/firestore.js";
+
+      document.addEventListener("DOMContentLoaded", function () {
+        loadStaff(); // Load staff records when the page loads
+
+        const showFormBtn = document.getElementById("show-form-btn");
+        const formContainer = document.getElementById("staff-form-container");
+        const cancelFormBtn = document.getElementById("cancel-form-btn");
+        const staffForm = document.getElementById("staff-form");
+
+        // Show Form
+        showFormBtn.addEventListener("click", function () {
+          formContainer.style.display = "block";
+          showFormBtn.disabled = true; // Disable button
+        });
+
+        // Cancel Form
+        cancelFormBtn.addEventListener("click", function () {
+          formContainer.style.display = "none";
+          showFormBtn.disabled = false; // Re-enable button
+          staffForm.reset(); // Clear form fields
+        });
+
+        // Handle form submission
+        staffForm.addEventListener("submit", function (event) {
+          event.preventDefault(); // Prevent page reload
+
+          const staffID = document.getElementById("staffID").value;
+          const name = document.getElementById("staffName").value;
+          addStaff(staffID, name); // Add staff to Firestore
+
+          formContainer.style.display = "none"; // Hide form
+          showFormBtn.disabled = false; // Re-enable button
+          staffForm.reset(); // Clear form
+        });
+      });
+
+      import { loadAvailableResources, loadWardBedsUsage, loadOxygenStocking, loadOxygenUsage, addAvailableResource, addOxygenStocking, addOxygenUsage } from "./js/firestore.js";
+
+      document.addEventListener("DOMContentLoaded", function () {
+        // Load tables
+        loadAvailableResources();
+        loadWardBedsUsage();
+        loadOxygenStocking();
+        loadOxygenUsage();
+        setTimeout(checkResourceLevels, 5000); // 5000ms = 5 seconds
+
+        // ==================== Available Resources Form ==================== //
+        const showResourceFormBtn = document.getElementById("show-resource-form-btn");
+        const resourceFormContainer = document.getElementById("resource-form-container");
+        const cancelResourceFormBtn = document.getElementById("cancel-resource-form-btn");
+        const resourceForm = document.getElementById("resource-form");
+
+        showResourceFormBtn.addEventListener("click", function () {
+          resourceFormContainer.style.display = "block";
+          showResourceFormBtn.disabled = true;
+        });
+
+        cancelResourceFormBtn.addEventListener("click", function () {
+          resourceFormContainer.style.display = "none";
+          showResourceFormBtn.disabled = false;
+          resourceForm.reset();
+        });
+
+        resourceForm.addEventListener("submit", function (event) {
+          event.preventDefault();
+          const resourceName = document.getElementById("resourceName").value;
+          const resourceAvailable = document.getElementById("resourceAvailable").value;
+          addAvailableResource(resourceName, resourceAvailable);
+          resourceFormContainer.style.display = "none";
+          showResourceFormBtn.disabled = false;
+          resourceForm.reset();
+        });
+
+        // ==================== Oxygen Stocking Form ==================== //
+        const showOxygenStockingFormBtn = document.getElementById("show-oxygen-stocking-form-btn");
+        const oxygenStockingFormContainer = document.getElementById("oxygen-stocking-form-container");
+        const cancelOxygenStockingFormBtn = document.getElementById("cancel-oxygen-stocking-form-btn");
+        const oxygenStockingForm = document.getElementById("oxygen-stocking-form");
+
+        showOxygenStockingFormBtn.addEventListener("click", function () {
+          oxygenStockingFormContainer.style.display = "block";
+          showOxygenStockingFormBtn.disabled = true;
+        });
+
+        cancelOxygenStockingFormBtn.addEventListener("click", function () {
+          oxygenStockingFormContainer.style.display = "none";
+          showOxygenStockingFormBtn.disabled = false;
+          oxygenStockingForm.reset();
+        });
+
+        oxygenStockingForm.addEventListener("submit", function (event) {
+          event.preventDefault();
+          const amountAdded = document.getElementById("amountAdded").value;
+          addOxygenStocking(amountAdded);
+          oxygenStockingFormContainer.style.display = "none";
+          showOxygenStockingFormBtn.disabled = false;
+          oxygenStockingForm.reset();
+          setTimeout(checkResourceLevels, 5000); // 5000ms = 5 seconds
+        });
+
+        // ==================== Oxygen Usage Form ==================== //
+        const showOxygenUsageFormBtn = document.getElementById("show-oxygen-usage-form-btn");
+        const oxygenUsageFormContainer = document.getElementById("oxygen-usage-form-container");
+        const cancelOxygenUsageFormBtn = document.getElementById("cancel-oxygen-usage-form-btn");
+        const oxygenUsageForm = document.getElementById("oxygen-usage-form");
+
+        showOxygenUsageFormBtn.addEventListener("click", function () {
+          oxygenUsageFormContainer.style.display = "block";
+          showOxygenUsageFormBtn.disabled = true;
+        });
+
+        cancelOxygenUsageFormBtn.addEventListener("click", function () {
+          oxygenUsageFormContainer.style.display = "none";
+          showOxygenUsageFormBtn.disabled = false;
+          oxygenUsageForm.reset();
+        });
+
+        oxygenUsageForm.addEventListener("submit", function (event) {
+          event.preventDefault();
+          const patientID = document.getElementById("patientID").value;
+          addOxygenUsage(patientID);
+          oxygenUsageFormContainer.style.display = "none";
+          showOxygenUsageFormBtn.disabled = false;
+          oxygenUsageForm.reset();
+          setTimeout(checkResourceLevels, 5000); // 5000ms = 5 seconds
+        });
+      });
+
+      // Function to show notification
+      function showNotification(message) {
+        const notificationPopup = document.getElementById("notification-popup");
+        const notificationMessage = document.getElementById("notification-message");
+        const acknowledgeBtn = document.getElementById("acknowledge-btn");
+
+        // Set the notification message
+        notificationMessage.textContent = message;
+
+        // Show the notification
+        notificationPopup.style.display = "block";
+
+        // Handle "Acknowledge" button click
+        acknowledgeBtn.addEventListener("click", function () {
+          notificationPopup.style.display = "none"; // Hide the notification
+        });
+      }
+
+      // Function to check resource levels and show notifications
+      async function checkResourceLevels() {
+        const availableCylindersSpan = document.getElementById("available-cylinders");
+        const availableBedsSpan = document.getElementById("available-beds");
+
+        const availableCylinders = parseInt(availableCylindersSpan.textContent, 10);
+        const availableBeds = parseInt(availableBedsSpan.textContent, 10);
+
+        // Check Oxygen Cylinders
+        if (availableCylinders < 5) {
+          showNotification(`Warning: Only ${availableCylinders} oxygen cylinders are available. Please restock soon.`);
+        }
+
+        // Check Beds in Wards
+        if (availableBeds < 10) {
+          showNotification(`Warning: Only ${availableBeds} beds are available in wards. Please allocate more beds soon.`);
+        }
+      }
+
+      // Call checkResourceLevels whenever the page loads or resources are updated
+      // document.addEventListener("DOMContentLoaded", checkResourceLevels);
+      // Call checkResourceLevels after loading oxygen data
+      // document.addEventListener("DOMContentLoaded", function () {
+      //   loadOxygenStocking();
+      //   loadOxygenUsage();
+        
+      // });
+    </script>
+    <!-- Notification Popup -->
+    <div id="notification-popup" class="notification-popup">
+      <i class="fa-solid fa-bell"></i>
+      <p id="notification-message"></p>
+      <button id="acknowledge-btn">Acknowledge</button>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Resource Management System</title>
+    <link rel="icon" href="images/RMSLogo.png" type="image/png" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="js/firestore.js"></script>
+    <style>
+      :root {
+        --primary-color: #01310b;
+        --secondary-color: #08770f;
+        --hover-color: #035415;
+        --border-color: #cdcdcd;
+        --light-bg: #f0f0f0;
+        --highlight-color: #012308;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        display: flex;
+        min-height: 100vh;
+        font-family: Arial, sans-serif;
+        background: white;
+      }
+      .sidebar {
+        width: 250px;
+        background: linear-gradient(to bottom, var(--secondary-color), var(--primary-color));
+        color: white;
+        display: flex;
+        flex-direction: column;
+        padding: 20px;
+        height: 100vh;
+        position: fixed;
+      }
+      .logo {
+        font-size: 28px;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .nav-links {
+        list-style: none;
+        flex-grow: 1;
+      }
+      .nav-links li {
+        margin: 15px 0;
+      }
+      .nav-links i {
+        margin-right: 3px;
+      }
+      .nav-links a,
+      .logout a {
+        color: white;
+        text-decoration: none;
+        font-size: 15px;
+        display: block;
+        padding: 10px;
+        border-radius: 5px;
+        transition: background 0.3s ease, box-shadow 0.3s ease;
+      }
+      .nav-links a:hover,
+      .logout a:hover {
+        background: var(--hover-color);
+        opacity: 1;
+        box-shadow: 0 2px 4px rgba(1, 49, 11, 0.3);
+      }
+      .nav-links a.active {
+        background: var(--primary-color);
+      }
+      .logout {
+        margin-top: auto;
+        text-align: center;
+      }
+      .logout a {
+        width: 100%;
+        text-align: center;
+        border: 2px solid var(--highlight-color);
+      }
+      .dashboard {
+        flex-grow: 1;
+        padding: 20px;
+        margin-left: 250px;
+        min-height: 100vh;
+      }
+      .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+      .date {
+        padding: 5px 10px;
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+      }
+      .heading {
+        display: flex;
+        align-items: flex-end;
+        margin-bottom: 10px;
+      }
+      .heading a {
+        padding: 10px;
+        color: var(--primary-color);
+        border-bottom: 2px solid var(--primary-color);
+        text-decoration: none;
+        font-weight: bold;
+      }
+      .tab-border {
+        flex-grow: 1;
+        border-bottom: 2px solid var(--border-color);
+        height: 2px;
+      }
+      .tab-content {
+        display: none;
+      }
+      .tab-content.active {
+        display: block;
+      }
+      .section {
+        margin-bottom: 20px;
+      }
+      h3 {
+        margin-bottom: 10px;
+      }
+      p {
+        font-size: 14px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+      th,
+      td {
+        padding: 10px;
+        border: 1px solid var(--border-color);
+      }
+      th {
+        background: var(--light-bg);
+        font-weight: bold;
+      }
+      .delete-btn,
+      .confirm-btn,
+      .complete-btn {
+        padding: 3px 5px;
+        transition: all 0.3s ease;
+      }
+
+      .delete-btn {
+        margin-right: 3px;
+        margin-bottom: 3px;
+      }
+
+      .delete-btn:hover {
+        color: #ff0000;
+      }
+
+      .confirm-btn:hover,
+      .complete-btn:hover {
+        color: var(--secondary-color);
+      }
+      .add-btn-container {
+        width: 100%;
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 10px;
+      }
+      .add-btn {
+        background: var(--primary-color);
+        color: yellow;
+        border-radius: 10%;
+        padding: 10px 14px;
+        cursor: pointer;
+        transition: box-shadow 0.3s ease;
+      }
+      .add-btn:hover {
+        box-shadow: 0 4px 8px rgba(1, 49, 11, 0.3);
+      }
+
+      /* Form CSS */
+      .form-container {
+        background: var(--light-bg);
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        width: 320px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        margin-top: 10px;
+        display: none; /* Initially hidden */
+      }
+
+      .form-container p {
+        font-size: 16px;
+        font-weight: bold;
+        color: var(--primary-color);
+        margin-bottom: 10px;
+      }
+
+      .input-group {
+        text-align: left;
+        margin-bottom: 10px;
+      }
+
+      .input-group label {
+        font-size: 14px;
+        display: block;
+        margin-bottom: 4px;
+        color: var(--primary-color);
+      }
+
+      .input-group input {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+      }
+      .input-group select {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+      }
+
+      .form-buttons {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 10px;
+      }
+
+      .form-buttons button {
+        flex: 1;
+        padding: 10px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      .add-record-btn {
+        background: var(--primary-color);
+        color: white;
+        margin-right: 5px;
+      }
+
+      .add-record-btn:hover {
+        background: #035415;
+      }
+
+      .cancel-btn {
+        background: #ccc;
+        color: black;
+        margin-left: 5px;
+      }
+
+      .cancel-btn:hover {
+        background: #999;
+      }
+    </style>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const today = new Date();
+        const options = { weekday: "short", day: "2-digit", month: "short" };
+        document.querySelector(".date").textContent = today.toLocaleDateString("en-US", options);
+      });
+    </script>
+  </head>
+  <body>
+    <div class="sidebar">
+      <div class="logo">RMS</div>
+      <ul class="nav-links">
+        <li>
+          <a href="#" class="active"><i class="fa-solid fa-table-columns"></i> Dashboard</a>
+        </li>
+        <li>
+          <a href="rinventory.html"><i class="fa-solid fa-square-plus"></i> Resource Inventory</a>
+        </li>
+        <li>
+          <a href="rtracking.html"><i class="fa-solid fa-gauge-high"></i> Resource Tracking</a>
+        </li>
+        <li>
+          <a href="settings.html"><i class="fa-solid fa-gear"></i> System Settings</a>
+        </li>
+      </ul>
+      <div class="logout">
+        <a href="login.html">Log Out</a>
+      </div>
+    </div>
+    <div class="dashboard">
+      <div class="top-bar">
+        <h1>Dashboard</h1>
+        <div class="date"></div>
+      </div>
+      <div class="heading">
+        <a href="#" class="tab-link" data-tab="patient-list">Patient List</a>
+        <div class="tab-border"></div>
+      </div>
+      <div id="patient-list" class="tab-content active">
+        <div class="section">
+          <h3>Pending Patients</h3>
+          <p>Patients waiting to be sent to their assigned destination.</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Patient ID</th>
+                <th>Name</th>
+                <th>Condition</th>
+                <th>Room Assigned</th>
+                <th>Priority Level</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="pending-patients-table-body"></tbody>
+          </table>
+          <div class="add-btn-container">
+            <button id="show-patient-form-btn" class="add-btn">+</button>
+          </div>
+
+          <!-- Patient Form -->
+          <div id="patient-form-container" class="form-container">
+            <p>Fill the form appropriately.</p>
+            <form id="patient-form">
+              <div class="input-group">
+                <label for="patientID">Patient ID</label>
+                <input type="text" id="patientID" placeholder="Enter Patient ID" required />
+              </div>
+              <div class="input-group">
+                <label for="patientName">Name</label>
+                <input type="text" id="patientName" placeholder="Enter Name" required />
+              </div>
+              <div class="input-group">
+                <label for="patientCondition">Condition</label>
+                <input type="text" id="patientCondition" placeholder="Enter Condition" required />
+              </div>
+              <div class="input-group">
+                <label for="roomAssigned">Room Assigned</label>
+                <input type="text" id="roomAssigned" placeholder="Enter Room Assigned" required />
+              </div>
+              <div class="input-group">
+                <label for="priorityLevel">Priority Level</label>
+                <select id="priorityLevel" required>
+                  <option value="" disabled selected>Select Priority Level</option>
+                  <option value="Regular">Regular</option>
+                  <option value="Urgent">Urgent</option>
+                </select>
+              </div>
+              <div class="form-buttons">
+                <button type="submit" class="add-record-btn">Add Record</button>
+                <button type="button" id="cancel-patient-form-btn" class="cancel-btn">Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+        <div class="section">
+          <h3>Active Patients</h3>
+          <p>Patients currently in a consultation room or undergoing treatment.</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Patient ID</th>
+                <th>Name</th>
+                <th>Condition</th>
+                <th>Room Assigned</th>
+                <th>Timestamp</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="active-patients-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <script type="module">
+      import { addPendingPatient, loadPendingPatients, loadActivePatients } from "./js/firestore.js";
+
+      document.addEventListener("DOMContentLoaded", function () {
+        // Load tables
+        loadPendingPatients();
+        loadActivePatients();
+
+        // Handle form display and hide
+        const showFormBtn = document.getElementById("show-patient-form-btn");
+        const formContainer = document.getElementById("patient-form-container");
+        const cancelFormBtn = document.getElementById("cancel-patient-form-btn");
+        const patientForm = document.getElementById("patient-form");
+
+        showFormBtn.addEventListener("click", function () {
+          formContainer.style.display = "block";
+          showFormBtn.disabled = true; // Disable button
+        });
+
+        cancelFormBtn.addEventListener("click", function () {
+          formContainer.style.display = "none";
+          showFormBtn.disabled = false; // Re-enable button
+          patientForm.reset(); // Clear form fields
+        });
+
+        patientForm.addEventListener("submit", function (event) {
+          event.preventDefault(); // Prevent page reload
+
+          // Handle form submission (e.g., add patient to Firestore)
+          const patientID = document.getElementById("patientID").value;
+          const patientName = document.getElementById("patientName").value;
+          const patientCondition = document.getElementById("patientCondition").value;
+          const roomAssigned = document.getElementById("roomAssigned").value;
+          const priorityLevel = document.getElementById("priorityLevel").value;
+
+          // Add your logic to handle the form data (e.g., save to Firestore)
+          console.log("Patient ID:", patientID);
+          console.log("Patient Name:", patientName);
+          console.log("Condition:", patientCondition);
+          console.log("Room Assigned:", roomAssigned);
+          console.log("Priority Level:", priorityLevel);
+
+          addPendingPatient(document.getElementById("patientID").value, document.getElementById("patientName").value, document.getElementById("patientCondition").value, document.getElementById("roomAssigned").value, document.getElementById("priorityLevel").value);
+
+          formContainer.style.display = "none"; // Hide form
+          showFormBtn.disabled = false; // Re-enable button
+          patientForm.reset(); // Clear form
+        });
+      });
+    </script>
+  </body>
+</html>
